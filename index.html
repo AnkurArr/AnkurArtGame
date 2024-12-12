@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankur Puzzle Game</title>
+    <style>
+        /* Base Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 10px;
+            text-shadow: 0 3px 5px rgba(0, 0, 0, 0.4);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin: 5px;
+            text-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-container {
+            position: relative;
+            width: 90vw;
+            max-width: 400px;
+            aspect-ratio: 1;
+            display: grid;
+            gap: 2px;
+            margin: 20px auto;
+            background: #1b1b2f;
+            border-radius: 12px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .tile {
+            background-size: 300%;
+            background-position: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile.empty {
+            background: transparent;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f72585, #b5179e);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #b5179e, #7209b7);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            button {
+                font-size: 0.9rem;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Ankur Puzzle Game</h1>
+    <h2 id="levelText">Level 1</h2>
+    <div class="game-container" id="gameContainer"></div>
+    <div class="controls">
+        <button id="shuffleButton">Shuffle</button>
+        <button id="solveButton">Solve</button>
+        <button id="nextLevelButton" disabled>Next Level</button>
+    </div>
+    <h3 id="levelText">Its just for fun by Soham Dutta 💙</h3>
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const shuffleButton = document.getElementById('shuffleButton');
+        const solveButton = document.getElementById('solveButton');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const levelText = document.getElementById('levelText');
+
+        const images = [
+            '511af96d-45c1-4f84-825c-2b7fa6b5e609.jpeg', // Level 1
+            'd5ca1104-f618-46aa-ac23-5ab7ed16d42d.jpeg', // Level 2
+            'f77fc2f7-90a0-4b11-b2df-f09b2865a7a4.jpeg', // Level 3
+            'IMG_4744.jpeg', // Level 4
+            'IMG_5004.jpeg'  // Level 5
+        ];
+
+        const maxLevel = images.length;
+        let currentLevel = 1;
+        let gridSize = 3; // Initial grid size (3x3 for Level 1)
+        let tiles = [];
+        let solvedTiles = [];
+
+        // Create the puzzle tiles
+        function createTiles() {
+            tiles = [];
+            for (let i = 0; i < gridSize * gridSize - 1; i++) {
+                tiles.push(i);
+            }
+            tiles.push(null); // Empty tile
+            solvedTiles = [...tiles];
+        }
+
+        // Shuffle the tiles
+        function shuffleTiles() {
+            do {
+                tiles = tiles.sort(() => Math.random() - 0.5);
+            } while (!isSolvable() || isSolved());
+            renderTiles();
+        }
+
+        // Check if the puzzle is solvable
+        function isSolvable() {
+            let inversions = 0;
+            const flatTiles = tiles.filter((tile) => tile !== null);
+            for (let i = 0; i < flatTiles.length; i++) {
+                for (let j = i + 1; j < flatTiles.length; j++) {
+                    if (flatTiles[i] > flatTiles[j]) inversions++;
+                }
+            }
+            return inversions % 2 === 0;
+        }
+
+        // Check if the puzzle is solved
+        function isSolved() {
+            return JSON.stringify(tiles) === JSON.stringify(solvedTiles);
+        }
+
+        // Render the tiles
+        function renderTiles() {
+            gameContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            gameContainer.innerHTML = '';
+            tiles.forEach((tile, index) => {
+                const tileElement = document.createElement('div');
+                tileElement.classList.add('tile');
+                if (tile === null) {
+                    tileElement.classList.add('empty');
+                } else {
+                    tileElement.style.backgroundImage = `url(${images[currentLevel - 1]})`;
+                    tileElement.style.backgroundPosition = getPosition(tile);
+                    tileElement.style.backgroundSize = `${gridSize * 100}%`;
+                    tileElement.addEventListener('click', () => moveTile(index));
+                }
+                gameContainer.appendChild(tileElement);
+            });
+        }
+
+        // Get the background position for a tile
+        function getPosition(index) {
+            const row = Math.floor(index / gridSize);
+            const col = index % gridSize;
+            return `${(col / (gridSize - 1)) * 100}% ${(row / (gridSize - 1)) * 100}%`;
+        }
+
+        // Move a tile
+        function moveTile(index) {
+            const emptyIndex = tiles.indexOf(null);
+            const validMoves = [index - 1, index + 1, index - gridSize, index + gridSize];
+            if (validMoves.includes(emptyIndex)) {
+                tiles[emptyIndex] = tiles[index];
+                tiles[index] = null;
+                renderTiles();
+                if (isSolved()) {
+                    setTimeout(() => {
+                        alert(`Congratulations! You solved Level ${currentLevel}!`);
+                        nextLevelButton.disabled = false;
+                    }, 200);
+                }
+            }
+        }
+
+        // Solve the puzzle
+        function solvePuzzle() {
+            tiles = [...solvedTiles];
+            renderTiles();
+        }
+
+        // Go to the next level
+        function nextLevel() {
+            if (currentLevel < maxLevel) {
+                currentLevel++;
+                gridSize++;
+                levelText.textContent = `Level ${currentLevel}`;
+                nextLevelButton.disabled = true;
+                initGame();
+            } else {
+                alert('You have completed all levels! Well done!');
+            }
+        }
+
+        // Initialize the game
+        function initGame() {
+            createTiles();
+            shuffleTiles();
+        }
+
+        // Event listeners
+        shuffleButton.addEventListener('click', shuffleTiles);
+        solveButton.addEventListener('click', solvePuzzle);
+        nextLevelButton.addEventListener('click', nextLevel);
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
